@@ -1,39 +1,18 @@
 package demo.utils;
 
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
+
 
 import org.openqa.selenium.By;
-import org.openqa.selenium.Keys;
+import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
 public class Utilities {
-    public static Boolean sendKeysWrapper(WebDriver driver, By locator, String textToSend) {
-        System.out.println("Sending Keys");
-        Boolean success;
-        try {
-            WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
-            wait.until(ExpectedConditions.visibilityOfElementLocated(locator));
-            WebElement textInput = driver.findElement(locator);
-            textInput.clear();
-            textInput.sendKeys(textToSend);
-            textInput.sendKeys(Keys.ENTER);
-            success = true;
-        } catch (Exception e) {
-            System.out.println("Exception Occured! " + e.getMessage());
-            success = false;
-        }
-        return success;
-    }
-
+    WebDriver driver;
+    
     public static Boolean clickWrapper(WebDriver driver, By locator) {
         System.out.println("Clicking");
         Boolean success;
@@ -50,97 +29,90 @@ public class Utilities {
         return success;
     }
 
-    public static ArrayList<String> searchStarAndPrint(WebDriver driver, By locatorOfTitle, By locatorOfRating, double starRating) {
-        System.out.println("Printing products with more with certain attribute");
-        List<WebElement> titles = driver.findElements(locatorOfTitle);
-        List<WebElement> attr = driver.findElements(locatorOfRating);
-        System.out.println("Found Titles: "+titles.size()+" and attribute "+attr.size());
-        ArrayList<String> results = new ArrayList<>();
-
-        if(attr.size()!=titles.size()){
-            System.out.println("Mismatch in size of array");
-            if(attr.size()>titles.size()) attr = sliceArrayList(attr, titles.size());
-            else titles = sliceArrayList(titles, attr.size());
+    public static void javaScroll(WebDriver driver, By locator){
+        try {
+            JavascriptExecutor js=(JavascriptExecutor)driver;
+            js.executeScript("arguments[0].scrollIntoView();",locator);
+            Thread.sleep(3000);
+        } catch (Exception e) {
+            // TODO: handle exception
+            System.out.println("exception occured" + e.getMessage());
         }
+    }
+
+    public static void findElementAndClick(WebDriver driver, By locator) throws InterruptedException {
+        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
         
-        for (int i = 0; i < titles.size(); i++) {
-            String title = titles.get(i).getText();
-            String attribute = attr.get(i).getText();
-            attribute = removeSubstring(attribute, "% off");
-            float attributeFloat = 0;
-            try {
-                // Convert rating from String to Float
-                attributeFloat = Float.parseFloat(attribute);
-                
-                // Check if rating is greater than or equal to 4.0
-                if (attributeFloat >= starRating) {
-                    // If condition is met, add to the results list
-                    results.add(title + " has a attribute of " + attributeFloat);
+        // Wait for the element to be clickable
+        WebElement element = wait.until(ExpectedConditions.elementToBeClickable(locator));
+        
+        // Wait until element is visible after scrolling
+        wait.until(ExpectedConditions.visibilityOf(element));
+        
+        // Click the element
+        element.click();
+        Thread.sleep(1000);
+    }
+
+   
+
+    public static String findElementAndPrintWE(WebDriver driver, By locator, WebElement we, int elementNo){
+        WebElement element = we.findElements(locator).get(elementNo);
+
+        String txt = element.getText();
+        return txt;
+    }
+
+    public static long convertToNumericValue(String value) {
+        // Trim the string to remove any leading or trailing spaces
+        value = value.trim().toUpperCase();
+
+        // Check if the last character is non-numeric and determine the multiplier
+        char lastChar = value.charAt(value.length() - 1);
+        int multiplier = 1;
+        switch (lastChar) {
+            case 'K':
+                multiplier = 1000;
+                break;
+            case 'M':
+                multiplier = 1000000;
+                break;
+            case 'B':
+                multiplier = 1000000000;
+                break;
+            default:
+                // If the last character is numeric, parse the entire string
+                if (Character.isDigit(lastChar)) {
+                    return Long.parseLong(value);
                 }
-            } catch (NumberFormatException e) {
-                // Handle potential NumberFormatException for invalid float strings
-                System.out.println("Invalid rating format for: " + title + ", rating: " + attributeFloat);
+                throw new IllegalArgumentException("Invalid format: " + value);
+        }
+
+        // Extract the numeric part before the last character
+        String numericPart = value.substring(0, value.length() - 1);
+        double number = Double.parseDouble(numericPart);
+
+        // Calculate the final value
+        return (long) (number * multiplier);
+    }
+
+    public static boolean verifyMarkedForMature(WebDriver driver,By locator,String mark){
+        try {
+            boolean status;
+            WebElement maturitymark=driver.findElement(locator);
+            if(maturitymark.getText().contains(mark)){
+                status=true;
+            }else{
+                status=false;
             }
+            return status;
+        } catch (Exception e) {
+            // TODO: handle exception
+            e.printStackTrace();
+            //return false;
         }
-        
-        return results;
+        return false;
     }
 
-    public static List<String> searchHighestReview(WebDriver driver, By locatorOfTitle, By locatorOfAttribute) {
-        System.out.println("Printing products with more with certain attribute");
-        List<WebElement> titles = driver.findElements(locatorOfTitle);
-        List<WebElement> attr = driver.findElements(locatorOfAttribute);
-        System.out.println("Found Titles: "+titles.size()+" and attribute "+attr.size());
-        HashMap<String, Integer> results = new HashMap<String, Integer>();
-
-        if(attr.size()!=titles.size()){
-            System.out.println("Mismatch in size of array, modifying to adjut");
-            if(attr.size()>titles.size()) attr = sliceArrayList(attr, titles.size());
-            else titles = sliceArrayList(titles, attr.size());
-        }
-        
-        for (int i = 0; i < titles.size(); i++) {
-            String title = titles.get(i).getText();
-            String attribute = attr.get(i).getText();
-            attribute = removeSubstring(removeSubstring(attribute, "("),")").replace(",", ""); // Making it parseable
-            Integer attributeInt = 0;
-            try {
-                // Convert rating from String to Float
-                // DEBUG
-                // System.out.println("Parsing attribute - "+attribute);
-                attributeInt = Integer.parseInt(attribute);
-                results.putIfAbsent(title, attributeInt);
-                
-            } catch (NumberFormatException e) {
-                // Handle potential NumberFormatException for invalid float strings
-                System.out.println("Invalid rating format for: " + title);
-            }
-        }
-        
-        return getTopFiveKeys(results);
-    }
-
-    public static List<String> getTopFiveKeys(Map<String, Integer> map) {
-        return map.entrySet()
-                  .stream()
-                  .sorted(Collections.reverseOrder(Map.Entry.comparingByValue()))
-                  .limit(5)
-                  .map(Map.Entry::getKey)
-                  .collect(Collectors.toList());
-    }
-    public static String removeSubstring(String originalString, String substringToRemove) {
-        // Check if the original string contains the specified substring
-        if (originalString.contains(substringToRemove)) {
-            // Remove the substring from the original string
-            return originalString.replace(substringToRemove, "").trim();
-        }
-        // Return the original string if it does not contain the substring
-        return originalString;
-    }
-    public static <T> List<T> sliceArrayList(List<T> list, int n) {
-        // Ensure the size n does not exceed the list size
-        n = Math.min(n, list.size());
-        // Create a new ArrayList from the sublist to ensure it's a separate list
-        return new ArrayList<>(list.subList(0, n));
-    }
 }
+

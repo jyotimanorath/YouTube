@@ -1,133 +1,196 @@
 package demo;
 import demo.utils.*;
 
-import java.util.ArrayList;
-import java.util.HashMap;
+import java.time.Duration;
 import java.util.List;
-import java.util.logging.Level;
+
 
 import org.openqa.selenium.By;
+import org.openqa.selenium.JavascriptExecutor;
+import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
-import org.openqa.selenium.chrome.ChromeDriverService;
-import org.openqa.selenium.chrome.ChromeOptions;
-import org.openqa.selenium.logging.LogType;
-import org.openqa.selenium.logging.LoggingPreferences;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.WebDriverWait;
+import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
+import org.testng.asserts.SoftAssert;
 
 import io.github.bonigarcia.wdm.WebDriverManager;
 
 public class TestCases {
-    
+
     WebDriver driver;
+    SoftAssert softAssert = new SoftAssert();
 
     @BeforeClass
-    public void setup(){
+    public void setup() {
         System.out.println("Constructor: Driver");
-
-
-        // Set log level and type
-        ChromeOptions options = new ChromeOptions();
-
-
-        LoggingPreferences logs = new LoggingPreferences();
-
-        logs.enable(LogType.BROWSER, Level.ALL);
-        logs.enable(LogType.DRIVER, Level.ALL);
-        options.setCapability("goog:loggingPrefs", logs);
-
-        // Set path for log file
-        System.setProperty(ChromeDriverService.CHROME_DRIVER_LOG_PROPERTY, "chromedriver.log");
-
         WebDriverManager.chromedriver().timeout(30).setup();
-        driver = new ChromeDriver(options);
+        driver = new ChromeDriver();
         driver.manage().window().maximize();
         System.out.println("Successfully Created Driver");
+
     }
 
-    @Test(priority = 0, description = "Search Washing Machine. Sort by popularity and print the count of items with rating less than or equal to 4 stars")
-    public void testCase01() throws InterruptedException{
+    @Test(priority = 0,enabled = true, description = "Verify the url")
+    public void testCase01() throws InterruptedException {
         System.out.println("Beginning Test Case 01");
-
-        String sortByString = "Newest First";
-        double starRating = 4.0;
-        // Go to Flipkart
-        driver.get("http://www.flipkart.com");
-        Thread.sleep((new java.util.Random().nextInt(3) + 2) * 1000);
-        // Find the Search Box and Send Washing Machine as Text
-        Boolean flow1Result = Utilities.sendKeysWrapper(driver, By.xpath("//button[@aria-label='Search for Products, Brands and More']/../div/input"), "Washing Machine");
-        if(flow1Result){
-            System.out.println("Flow 1 success");
-        }
-        else System.out.println("Failure in flow 1");
-        Thread.sleep((new java.util.Random().nextInt(3) + 2) * 1000);
-        // Sort By Popularity
-        Boolean flow2Result = Utilities.clickWrapper(driver, By.xpath("//span[normalize-space(text())='Sort By']/../div[text()='"+sortByString+"']"));
-        if(flow2Result){
-            System.out.println("Flow 2 success");
-        }
-        else System.out.println("Failure in flow 2");        
-        Thread.sleep((new java.util.Random().nextInt(3) + 2) * 1000);
-        // Print the Number of Items with Rating Less than or Equal to 4 Stars
-        ArrayList<String> flow3Result = Utilities.searchStarAndPrint(driver, By.xpath("//*[contains(text(), 'Ratings') and not(./*) and not(contains(text(), 'Customer'))]/../../../../div[1]"), By.xpath("//*[contains(text(), 'Ratings') and not(./*) and not(contains(text(), 'Customer'))]/../../../span[1]/div[1]"), starRating);
-        Thread.sleep((new java.util.Random().nextInt(3) + 2) * 1000);
-        for(String res : flow3Result){
-            System.out.println(res);
-        }
+        driver.get("https://www.youtube.com/");
+        String expectedStr = "https://www.youtube.com/";
+        String currentPage = driver.getCurrentUrl();
+        Assert.assertTrue(currentPage.contains(expectedStr), "String did not contains the required text");
+        System.out.println("The current page url contains youtube");
+        Utilities.clickWrapper(driver, By.xpath("//a[@href='https://www.youtube.com/about/']"));
+        JavascriptExecutor js = (JavascriptExecutor) driver;
+        js.executeScript("window.scrollBy(0,350)", "");
+        String message = driver.findElement(By.xpath("(//section[@class='ytabout__content']/p)[1]")).getText();
+        System.out.println(message);
         System.out.println("Ending Test Case 01");
     }
 
-    @Test(priority = 1, description = "Search “iPhone”, print the Titles and discount % of items with more than 17% discount")
-    public void testCase02() throws InterruptedException{
+    @Test(priority = 1,enabled = true, description = "Check whether the movie is comedy or animation movie")
+    public void testCase02() throws InterruptedException {
         System.out.println("Beginning Test Case 02");
+        driver.get("https://www.youtube.com/");
+        Utilities.clickWrapper(driver, By.xpath("//yt-formatted-string[text()='Movies']"));
+        Thread.sleep((new java.util.Random().nextInt(3) + 2) * 1000);
+        // scroll till we found "Top selling" title
+        Utilities.javaScroll(driver, By.xpath("//span[text()='Top selling']"));
+         
+        // locate extreme right button
+        WebElement button = driver.findElement(By.xpath("(//div[@id='right-arrow']//descendant::button[@aria-label='Next'])[1]"));
+        boolean result=button.isDisplayed();
+         while (result) {
+            try {
+                // Check if the button is visible
+                if (button.isDisplayed()) {
+                   // Click the button
+                    button.click();
+                } else {
+                    // If the button is not visible, exit the loop
+                    break;
+                }
+            } catch (Exception e) {
+                // Handle exceptions (e.g., element not found, timeout)
+                e.printStackTrace();
+                break;
+            }
+        }
+        WebElement maturity = driver
+                .findElement(By.xpath("//*[@id=\"items\"]/ytd-grid-movie-renderer[16]/ytd-badge-supported-renderer/div[2]"));
+        boolean status = Utilities.verifyMarkedForMature(driver,
+                By.xpath("//*[@id=\"items\"]/ytd-grid-movie-renderer[16]/ytd-badge-supported-renderer/div[2]"), "A");
+        softAssert.assertTrue(status, "Contains A ");
+        System.out.println(maturity.getText());
 
-        double discountPercent = 10.0;
-        // Go to Flipkart
-        driver.get("http://www.flipkart.com");
-        Thread.sleep((new java.util.Random().nextInt(3) + 2) * 1000);
-        // Search iPhone
-        Boolean flow1Result = Utilities.sendKeysWrapper(driver, By.xpath("//button[@aria-label='Search for Products, Brands and More']/../div/input"), "iPhone");
-        if(flow1Result){
-            System.out.println("Flow 1 success");
-        }
-        Thread.sleep((new java.util.Random().nextInt(3) + 2) * 1000);
-        // Print titles with more than 17% Discount
-        ArrayList<String> flow2Result = Utilities.searchStarAndPrint(driver, By.xpath("//*[contains(text(), 'Ratings') and not(./*) and not(contains(text(), 'Customer'))]/../../../../div[1]"), By.xpath("//span[contains(., '% off')]"), discountPercent);
-        Thread.sleep((new java.util.Random().nextInt(3) + 2) * 1000);
-        for(String res : flow2Result){
-            System.out.println(res);
-        }
-        System.out.println("Ending Test Case 02");   
-        Thread.sleep((new java.util.Random().nextInt(3) + 2) * 1000);
+        WebElement typeOfMovies = driver.findElement(
+                By.xpath("//*[@id=\"items\"]/ytd-grid-movie-renderer[16]/a/span"));
+         String[] text=(typeOfMovies.getText()).split("\\s");  
+        String actualType=text[0].trim();     
+        String expectedStr1="Comedy";
+        String expectedStr2="Animation";
+        System.out.println(actualType);
+        softAssert.assertEquals(actualType, expectedStr1, "Actual string does not match expected1");
+        softAssert.assertEquals(actualType, expectedStr2, "Actual string does not match expected2");
+        System.out.println("This movie is comedy");
+          
+         System.out.println("Ending Test Case 02");
+       
     }
 
-    @Test(priority = 3, description = "Search “Coffee Mug”, select 4 stars and above, and print the Title and image URL of the 5 items with highest number of reviews")
-    public void testCase03() throws InterruptedException{
+    @Test(priority = 3,enabled=true, description = "Go to music and Print the name of the playlist ")
+    public void testCase03() throws InterruptedException {
         System.out.println("Beginning Test Case 03");
-        driver.get("http://www.flipkart.com");
+        // driver.navigate().back();
+        driver.get("https://www.youtube.com/");
+        Utilities.clickWrapper(driver, By.xpath("(//yt-formatted-string[text()='Music'])[1]"));
+        
         Thread.sleep((new java.util.Random().nextInt(3) + 2) * 1000);
-        Utilities.sendKeysWrapper(driver, By.xpath("//button[@aria-label='Search for Products, Brands and More']/../div/input"), "Coffee Mug");
-        Thread.sleep((new java.util.Random().nextInt(3) + 2) * 1000);
-        Utilities.clickWrapper(driver, By.xpath("//div[text()='4★ & above']//ancestor::div[1]//div[1]"));
-        Thread.sleep((new java.util.Random().nextInt(3) + 2) * 1000);
-        List<String> result = Utilities.searchHighestReview(driver, 
-                                                    // Old Xpath
-                                                    // By.xpath("//a[@rel='noopener noreferrer'][2]"),
-                                                    By.xpath("//div[@class='slAVV4']//a[@rel='noopener noreferrer'][2]"),
-                                                    // Old Xpath
-                                                    // By.xpath("//a[@rel='noopener noreferrer'][2]/../div[3]//span[2]"));
-                                                    By.xpath("//div[@class='slAVV4']//span[@class='Wphh3N']"));
-        for(String s: result){
-            System.out.println(s);
+        // locate right button
+        WebElement button = driver.findElement(By.xpath("(//button[@aria-label='Next'])[1]"));
+        
+        boolean status=button.isDisplayed();
+
+        while (status) {
+            try {
+                // Check if the button is visible
+                if (button.isDisplayed()) {
+                    // Click the button
+                    button.click();
+                } else {
+                    // If the button is not visible, exit the loop
+                    break;
+                }
+            } catch (Exception e) {
+                // Handle exceptions (e.g., element not found, timeout)
+                e.printStackTrace();
+                break;
+            }
         }
-        Thread.sleep((new java.util.Random().nextInt(3) + 2) * 1000);
+         
+        WebElement title = driver
+                .findElement(By.xpath("(//h3[@class='style-scope ytd-compact-station-renderer'])[11]"));
+        System.out.println("Playlist is==>" + title.getText());
+         WebElement track = driver.findElement(By.xpath("(//*[@id='video-count-text'])[11]"));
+        // Thread.sleep((new java.util.Random().nextInt(3) + 2) * 1000);
+        String trackNo = track.getText();
+         String[] parts = trackNo.split(" ");
+         String value=parts[0].toString();
+         int intValue = Integer.parseInt(value);
+         softAssert.assertTrue(intValue <= 50, "having track value 50");
+        System.out.println("The value of the track is=>" + intValue);
+        
         System.out.println("Ending Test Case 03");
     }
 
+    @Test(priority = 4,enabled =true, description = "print the title and body of the 1st 3 Latest News Post")
+    public void testCase04() throws InterruptedException {
+        System.out.println("Beginning Test Case 04");
+        // Go to YouTube
+        driver.get("https://www.youtube.com/");
+        // driver.navigate().back();
+        Thread.sleep(3000);
+
+        Utilities.clickWrapper(driver, By.xpath("//yt-formatted-string[text()='News']"));
+
+        Thread.sleep((new java.util.Random().nextInt(3) + 2) * 1000);
+        // WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+
+        WebElement newsTitle = driver
+                .findElement(By.xpath("//span[@id='title'][contains(text(),'Latest news posts')]"));
+        System.out.println(newsTitle.getText());
+        JavascriptExecutor js = (JavascriptExecutor) driver;
+        js.executeScript("window.scrollBy(0,350)", "");
+        
+         WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));        
+ WebElement bodyContent = wait.until(ExpectedConditions.elementToBeClickable(By.xpath("//div[@id='rich-shelf-header-container' and contains(.,'Latest news posts')]//ancestor::div[1]//div[@id='contents']")));
+        
+        Thread.sleep((new java.util.Random().nextInt(3) + 2) * 1000);
+
+        for(int i = 1; i<=3; i++){
+            System.out.println(Utilities.findElementAndPrintWE(driver, By.xpath("//div[@id='header']"), bodyContent, i));
+            System.out.println(Utilities.findElementAndPrintWE(driver, By.xpath("//div[@id='body']"), bodyContent, i));
+            Thread.sleep((new java.util.Random().nextInt(3) + 2) * 1000);
+        }
+
+       int totalLikes = 0;
+        List<WebElement> likes = driver.findElements(By.xpath("//span[@id='vote-count-middle']"));
+        for (int i = 0; i < 3; i++) {
+            String likeStr = likes.get(i).getText();
+            long likenumber = Utilities.convertToNumericValue(likeStr);
+            totalLikes += likenumber;
+
+        }
+        System.out.println("total likes =" + totalLikes);
+        System.out.println("Ending Test Case 04");
+    }
+
     @AfterClass
-    public void tearDown(){
+    public void tearDown() {
         System.out.println("Destroying Driver Instance");
         driver.close();
         driver.quit();

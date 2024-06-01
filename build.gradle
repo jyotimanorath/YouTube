@@ -52,16 +52,16 @@ test {
     }
 }
 
-checkstyle {
-    toolVersion = '8.45' // Check for the latest version compatible with your setup
-    config = rootProject.resources.text.fromFile('__CRIO__/checkstyle.xml')
-    sourceSets = [sourceSets.test]
-    ignoreFailures = true
-}
+// checkstyle {
+//     toolVersion = '8.45' // Check for the latest version compatible with your setup
+//     config = rootProject.resources.text.fromFile('__CRIO__/checkstyle.xml')
+//     sourceSets = [sourceSets.test]
+//     ignoreFailures = true
+// }
 
-tasks.withType(Checkstyle) {
-    reports {
-            xml.required = true
-            html.required = true
-        }
-}
+// tasks.withType(Checkstyle) {
+//     reports {
+//             xml.required = true
+//             html.required = true
+//         }
+// }
